@@ -6,9 +6,15 @@ let isEnabled = false, isInstalled = false;
 let base_buildMenu, my_buildMenu;
 let uuid = "opacity-slider@unknown.uuid"
 
-// implement opacity slider that does the same thing as the scroll action:
-// https://github.com/linuxmint/muffin/blob/e78b8335f3113c38b7611193ae55ff3e14820961/src/core/window.c#L8803-L8817
+// This extension creates a slider for adjusting a window's opacity, and adds it
+// to the context menu when right-clicking a window's title bar.
+// We do this by replacing the funciton that builds the menu, calling the original,
+// and then adding our stuff before returning.
+// Ideally, there would be a cleaner way to add custom actions to this menu, but for
+// now this is the only way.
 
+
+// Some housekeeping
 function init(metadata) {
     uuid = metadata.uuid;
 }
@@ -21,22 +27,8 @@ let logW = function(text) {
     global.logWarning("[" + uuid + "]: " + text);
 }
 
-// add a slider 
-function addSlider(to_menu, value, callback) {
-    // variant of WindowMenu.prototype.addAction, but that adds a slider instead of a MnemonicLeftOrnamentedMenuItem
-    let menuItem = new PopupMenu.PopupSliderMenuItem(value);
-    to_menu.addMenuItem(menuItem, to_menu.numMenuItems - 2);
-    
-    menuItem.connect('value-changed', callback );
-    
-    // this._items is used for mnemonics
-    // before you uncomment the next line you must extend PopupSliderMenuItem and implement stuff
-    // see windowMenu.js
-    //this._items.push(menuItem); 
-    
-    return menuItem;
-}
 
+// Conversions between slider value and opacity value
 const opacity_max = 255;
 const opacity_min = 26;
 
@@ -48,11 +40,32 @@ function opacityFromSliderValue(value) {
     return Math.max(0, Math.min(255, Math.round( (value * (opacity_max-opacity_min) ) + opacity_min )));
 }
 
+
+// add a slider to a menu
+// variant of WindowMenu.prototype.addAction, but that adds a slider instead of a MnemonicLeftOrnamentedMenuItem
+function addSlider(to_menu, value, callback) {
+    let menuItem = new PopupMenu.PopupSliderMenuItem(value);
+    to_menu.addMenuItem(menuItem, to_menu.numMenuItems - 2); // num-2 to add before the Close action
+    
+    menuItem.connect('value-changed', callback );
+    
+    // this._items is used for mnemonics
+    // before you uncomment the next line you must extend PopupSliderMenuItem and implement stuff
+    // see Cinnamon's windowMenu.js: https://github.com/linuxmint/cinnamon/blob/master/js/ui/windowMenu.js
+
+    //this._items.push(menuItem); 
+    
+    return menuItem;
+}
+
+
+
 function install() {
     // install ourselves by diverting the WindowMenu internal function
     // hacky as hell!
     
     base_buildMenu = WindowMenu.WindowMenu.prototype._buildMenu;
+
     my_buildMenu = function(window, ...args) {
         // Creating a right-click menu
         
@@ -80,7 +93,7 @@ function install() {
             
             // Create the slider
             let slider = addSlider.call(this, this, sliderValueFromOpacity(initial_opacity), (sl, value) => {                
-                // convert the value range (0 to 1) to an acceptable opacity
+                // callback: update opacity by slider value
                 
                 const opacity = opacityFromSliderValue(value);
                 
