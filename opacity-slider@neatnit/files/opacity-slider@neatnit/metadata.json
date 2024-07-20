@@ -1,7 +1,8 @@
 {
-    "name": "Opacity Slider",
-    "description": "Change a window's opacity from the title bar right-click menu.",
     "uuid": "opacity-slider@neatnit",
+    "name": "Opacity Slider",
+    "version": "1.0.0",
+    "description": "Change a window's opacity from the title bar right-click menu.",
     "url": "https://codeberg.org/NeatNit/cinnamon-opacity-slider",
     "author": "NeatNit",
     "cinnamon-version": ["5.6", "6.0"]
